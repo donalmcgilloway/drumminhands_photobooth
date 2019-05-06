@@ -3,7 +3,7 @@ drumminhands_photobooth
 
 A DIY photo booth using a Raspberry Pi that automatically prints the photos taken by the photobooth. Also allows for debug mode and instead prints to PDF.
 
-Set up 
+Set up to work with Raspberry Pi 7" Touchscreen Display and PiCam.
 
 Forked from https://github.com/drumminhands/drumminhands_photobooth
 
