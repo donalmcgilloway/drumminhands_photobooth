@@ -1,23 +1,16 @@
 drumminhands_photobooth
 =======================
 
-A DIY photo booth using a Raspberry Pi that automatically sends animated gifs to a Tumblr account. Great for events.
+A DIY photo booth using a Raspberry Pi that automatically prints the photos taken by the photobooth. Also allows for debug mode and instead prints to PDF.
 
-Updated to version 3.0
+Set up 
 
-Find the full set of instructions here: http://www.drumminhands.com/2014/06/15/raspberry-pi-photo-booth/
-This requires:
-  - PiCamera -- http://picamera.readthedocs.org/
-  - GraphicsMagick -- http://www.graphicsmagick.org/
-  - pytumblr -- https://github.com/tumblr/pytumblr
-
-Be sure to add all of your own keys to config.py
-
-See also a companion projector to the photo booth.
--Code: https://github.com/drumminhands/drumminhands_projector
--Instructions: http://www.drumminhands.com/2016/09/02/raspberry-pi-photo-booth-projector/
+Forked from https://github.com/drumminhands/drumminhands_photobooth
 
 Credits:
+
+Main code base:
+-http://www.drumminhands.com
 Icons from the Noun Project
 -Button by Prerak Patel
 -Disco pose by Moriah Rich
