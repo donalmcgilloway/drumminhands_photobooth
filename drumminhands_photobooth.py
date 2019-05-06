@@ -13,8 +13,7 @@ import atexit
 import sys
 import socket
 import pygame
-from pygame.locals import QUIT, KEYDOWN, K_ESCAPE
-import pytumblr # https://github.com/tumblr/pytumblr
+from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_LEFT, K_RIGHT
 import config # this is the config python file config.py
 from signal import alarm, signal, SIGALRM, SIGKILL
 
@@ -22,7 +21,6 @@ from signal import alarm, signal, SIGALRM, SIGKILL
 ### Variables Config ###
 ########################
 led_pin = 7 # LED 
-btn_pin = 18 # pin for the start button
 
 total_pics = 4 # number of pics to be taken
 capture_delay = 1 # delay between pics
@@ -53,20 +51,6 @@ replay_cycles = 2 # how many times to show each photo on-screen after taking
 ####################
 real_path = os.path.dirname(os.path.realpath(__file__))
 
-# Setup the tumblr OAuth Client
-client = pytumblr.TumblrRestClient(
-    config.consumer_key,
-    config.consumer_secret,
-    config.oath_token,
-    config.oath_secret,
-)
-
-# GPIO setup
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(led_pin,GPIO.OUT) # LED
-GPIO.setup(btn_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.output(led_pin,False) #for some reason the pin turns on at the beginning of the program. Why?
-
 # initialize pygame
 pygame.init()
 pygame.display.set_mode((config.monitor_w, config.monitor_h))
@@ -83,16 +67,17 @@ pygame.display.toggle_fullscreen()
 def cleanup():
   print('Ended abruptly')
   pygame.quit()
-  GPIO.cleanup()
 atexit.register(cleanup)
 
 # A function to handle keyboard/mouse/device input events    
 def input(events):
     for event in events:  # Hit the ESC key to quit the slideshow.
         if (event.type == QUIT or
-            (event.type == KEYDOWN and event.key == K_ESCAPE)):
+            (event.type == KEYDOWN and event.key == K_LEFT)):
             pygame.quit()
-                
+		elif (event.type == KEYDOWN and event.key == K_RIGHT):
+			start_photobooth()
+
 #delete files in folder
 def clear_pics(channel):
 	files = glob.glob(config.file_path + '*')
@@ -101,10 +86,6 @@ def clear_pics(channel):
 	#light the lights in series to show completed
 	print "Deleted previous pics"
 	for x in range(0, 3): #blink light
-		GPIO.output(led_pin,True); 
-		sleep(0.25)
-		GPIO.output(led_pin,False);
-		sleep(0.25)
 
 # check if connected to the internet   
 def is_connected():
@@ -197,7 +178,6 @@ def start_photobooth():
 	################################# Begin Step 1 #################################
 	
 	print "Get Ready"
-	GPIO.output(led_pin,False);
 	show_image(real_path + "/instructions.png")
 	sleep(prep_delay)
 	
@@ -232,12 +212,10 @@ def start_photobooth():
 				camera.hflip = True # preview a mirror image
 				camera.start_preview(resolution=(config.monitor_w, config.monitor_h)) # start preview at low res but the right ratio
 				time.sleep(2) #warm up camera
-				GPIO.output(led_pin,True) #turn on the LED
 				filename = config.file_path + now + '-0' + str(i) + '.jpg'
 				camera.hflip = False # flip back when taking photo
 				camera.capture(filename)
 				print(filename)
-				GPIO.output(led_pin,False) #turn off the LED
 				camera.stop_preview()
 				show_image(real_path + "/pose" + str(i) + ".png")
 				time.sleep(capture_delay) # pause in-between shots
@@ -255,7 +233,6 @@ def start_photobooth():
 				GPIO.output(led_pin,True) #turn on the LED
 				print(filename)
 				time.sleep(capture_delay) # pause in-between shots
-				GPIO.output(led_pin,False) #turn off the LED
 				if i == total_pics-1:
 					break
 		finally:
@@ -344,7 +321,6 @@ def start_photobooth():
 	
 	time.sleep(restart_delay)
 	show_image(real_path + "/intro.png");
-	GPIO.output(led_pin,True) #turn on the LED
 
 ####################
 ### Main Program ###
@@ -355,17 +331,9 @@ if config.clear_on_startup:
 	clear_pics(1)
 
 print "Photo booth app running..." 
-for x in range(0, 5): #blink light to show the app is running
-	GPIO.output(led_pin,True)
-	sleep(0.25)
-	GPIO.output(led_pin,False)
-	sleep(0.25)
 
 show_image(real_path + "/intro.png");
 
 while True:
-	GPIO.output(led_pin,True); #turn on the light showing users they can push the button
 	input(pygame.event.get()) # press escape to exit pygame. Then press ctrl-c to exit python.
-	GPIO.wait_for_edge(btn_pin, GPIO.FALLING)
-	time.sleep(config.debounce) #debounce
-	start_photobooth()
+	#time.sleep(config.debounce) #debounce
