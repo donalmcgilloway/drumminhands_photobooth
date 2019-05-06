@@ -21,6 +21,7 @@ from signal import alarm, signal, SIGALRM, SIGKILL
 ### Variables Config ###
 ########################
 led_pin = 7 # LED 
+btn_pin = 18 # pin for the start button
 
 total_pics = 4 # number of pics to be taken
 capture_delay = 1 # delay between pics
@@ -67,6 +68,7 @@ pygame.display.toggle_fullscreen()
 def cleanup():
   print('Ended abruptly')
   pygame.quit()
+  #GPIO.cleanup()
 atexit.register(cleanup)
 
 # A function to handle keyboard/mouse/device input events    
@@ -75,17 +77,15 @@ def input(events):
         if (event.type == QUIT or
             (event.type == KEYDOWN and event.key == K_LEFT)):
             pygame.quit()
-		elif (event.type == KEYDOWN and event.key == K_RIGHT):
-			start_photobooth()
-
+        elif (event.type == KEYDOWN and event.key == K_RIGHT):
+            start_photobooth()
+	        
 #delete files in folder
 def clear_pics(channel):
 	files = glob.glob(config.file_path + '*')
 	for f in files:
 		os.remove(f) 
-	#light the lights in series to show completed
 	print "Deleted previous pics"
-	for x in range(0, 3): #blink light
 
 # check if connected to the internet   
 def is_connected():
@@ -169,6 +169,7 @@ def display_pics(jpg_group):
 		for i in range(1, total_pics+1): #show each pic
 			show_image(config.file_path + jpg_group + "-0" + str(i) + ".jpg")
 			time.sleep(replay_delay) # pause 
+		
 				
 # define the photo taking function for when the big button is pressed 
 def start_photobooth(): 
@@ -187,7 +188,7 @@ def start_photobooth():
 	camera = picamera.PiCamera()  
 	camera.vflip = False
 	camera.hflip = True # flip for preview, showing users a mirror image
-	camera.saturation = -100 # comment out this line if you want color images
+	#camera.saturation = -100 # comment out this line if you want color images
 	camera.iso = config.camera_iso
 	
 	pixel_width = 0 # local variable declaration
@@ -230,7 +231,6 @@ def start_photobooth():
 		
 		try: #take the photos
 			for i, filename in enumerate(camera.capture_continuous(config.file_path + now + '-' + '{counter:02d}.jpg')):
-				GPIO.output(led_pin,True) #turn on the LED
 				print(filename)
 				time.sleep(capture_delay) # pause in-between shots
 				if i == total_pics-1:
@@ -336,4 +336,3 @@ show_image(real_path + "/intro.png");
 
 while True:
 	input(pygame.event.get()) # press escape to exit pygame. Then press ctrl-c to exit python.
-	#time.sleep(config.debounce) #debounce
