@@ -13,7 +13,7 @@ import atexit
 import sys
 import socket
 import pygame
-from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_LEFT, K_RIGHT
+from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_LEFT, K_RIGHT, MOUSEBUTTONUP
 import config # this is the config python file config.py
 from signal import alarm, signal, SIGALRM, SIGKILL
 
@@ -77,7 +77,7 @@ def input(events):
         if (event.type == QUIT or
             (event.type == KEYDOWN and event.key == K_LEFT)):
             pygame.quit()
-        elif (event.type == KEYDOWN and event.key == K_RIGHT):
+        elif (event.type == MOUSEBUTTONUP):
             start_photobooth()
 	        
 #delete files in folder
