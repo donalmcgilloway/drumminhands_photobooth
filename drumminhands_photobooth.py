@@ -24,7 +24,7 @@ from signal import alarm, signal, SIGALRM, SIGKILL
 led_pin = 7 # LED 
 btn_pin = 18 # pin for the start button
 
-total_pics = 4 # number of pics to be taken
+total_pics = 3 # number of pics to be taken
 capture_delay = 1 # delay between pics
 prep_delay = 5 # number of seconds at step 1 as users prep to have photo taken
 gif_delay = 100 # How much time between frames in the animated gif
@@ -36,6 +36,8 @@ test_server = 'www.google.com'
 # or increase memory http://picamera.readthedocs.io/en/release-1.12/fov.html#hardware-limits
 high_res_w = 1296 # width of high res image, if taken
 high_res_h = 972 # height of high res image, if taken
+
+my_jpgs=[]
 
 #############################
 ### Variables that Change ###
@@ -69,7 +71,6 @@ pygame.display.toggle_fullscreen()
 def cleanup():
   print('Ended abruptly')
   pygame.quit()
-  #GPIO.cleanup()
 atexit.register(cleanup)
 
 # A function to handle keyboard/mouse/device input events    
@@ -109,13 +110,12 @@ def print_pic(filename):
 	conn.printFile(default_printer, filename, "photobooth",{'fit-to-page':'true'})
 	print "Printing image"
 
-def print_pdf(filename):
+def print_pdf(combinedfile):
 	conn = cups.Connection()
 	printers = conn.getPrinters()
-	print printers
 	default_printer = printers.keys()[0]
 	cups.setUser('pi')
-	conn.printFile(default_printer, filename, "photobooth" + time.strftime("%Y-%m-%d-%H-%M-%S"),{'fit-to-page':'true'})
+	conn.printFile(default_printer, combinedfile, "photobooth" + time.strftime("%Y-%m-%d-%H-%M-%S"),{'fit-to-page':'true'})
 	print "Printing image"
 
 # set variables to properly display the image on screen at right ratio
@@ -247,9 +247,13 @@ def start_photobooth():
 		camera.start_preview(resolution=(config.monitor_w, config.monitor_h)) # start preview at low res but the right ratio
 		time.sleep(2) #warm up camera
 		
+		
+		
 		try: #take the photos
 			for i, filename in enumerate(camera.capture_continuous(config.file_path + now + '-' + '{counter:02d}.jpg')):
 				print(filename)
+				my_jpgs.append(filename)
+				print(my_jpgs[:])
 				time.sleep(capture_delay) # pause in-between shots
 				if i == total_pics-1:
 					break
@@ -261,28 +265,34 @@ def start_photobooth():
 	
 	input(pygame.event.get()) # press escape to exit pygame. Then press ctrl-c to exit python.
 	
-	print "Creating an animated gif" 
+	#print "Creating an animated gif" 
 	
 	#if config.printing:
         #		show_image(real_path + "/printing.png")
 	#else:
 	#	show_image(real_path + "/processing.png")
 	
-	if config.make_gifs: # make the gifs
-		if config.hi_res_pics:
-			# first make a small version of each image. Tumblr's max animated gif's are 500 pixels wide.
-			for x in range(1, total_pics+1): #batch process all the images
-				graphicsmagick = "gm convert -size 500x500 " + config.file_path + now + "-0" + str(x) + ".jpg -thumbnail 500x500 " + config.file_path + now + "-0" + str(x) + "-sm.jpg"
-				os.system(graphicsmagick) #do the graphicsmagick action
-
-			graphicsmagick = "gm convert -delay " + str(gif_delay) + " " + config.file_path + now + "*-sm.jpg " + config.file_path + now + ".gif" 
-			os.system(graphicsmagick) #make the .gif
-		else:
-			# make an animated gif with the low resolution images
-			graphicsmagick = "gm convert -delay " + str(gif_delay) + " " + config.file_path + now + "*.jpg " + config.file_path + now + ".gif" 
-			os.system(graphicsmagick) #make the .gif
+	#if config.make_gifs: # make the gifs
+	#	if config.hi_res_pics:
+	#		# first make a small version of each image. Tumblr's max animated gif's are 500 pixels wide.
+	#		for x in range(1, total_pics+1): #batch process all the images
+	#			graphicsmagick = "gm convert -size 500x500 " + config.file_path + now + "-0" + str(x) + ".jpg -thumbnail 500x500 " + config.file_path + now + "-0" + str(x) + "-sm.jpg"
+	#			os.system(graphicsmagick) #do the graphicsmagick action
+	#
+	#		graphicsmagick = "gm convert -delay " + str(gif_delay) + " " + config.file_path + now + "*-sm.jpg " + config.file_path + now + ".gif" 
+	#		os.system(graphicsmagick) #make the .gif
+	#	else:
+	#		# make an animated gif with the low resolution images
+	#		graphicsmagick = "gm convert -delay " + str(gif_delay) + " " + config.file_path + now + "*.jpg " + config.file_path + now + ".gif" 
+	#		os.system(graphicsmagick) #make the .gif
 	if config.debug_mode:
-		print_pdf(filename)
+		print(my_jpgs[:])
+		for x in range(1, total_pics+1): #batch process all the images
+				#graphicsmagick = "gm montage -borderwidth 5 my_jpgs[:]" + config.combined_path + "combined.png"
+				graphicsmagick = "gm montage -size 500x500-borderwidth 5 2019-05-06-23-44-08-01.jpg 2019-05-06-23-44-08-02.jpg " + config.combined_path + "combined.png"
+				os.system(graphicsmagick) #do the graphicsmagick action
+				combinedfile = config.combined_path + "combined.png"
+				print_pdf(combinedfile)
 	elif config.printing: # turn off posting pics online in config.py
 		#connected = is_connected() #check to see if you have an internet connection
                 print_pic(filename) 
