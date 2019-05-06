@@ -13,6 +13,7 @@ import atexit
 import sys
 import socket
 import pygame
+import cups
 from pygame.locals import QUIT, KEYDOWN, K_ESCAPE, K_LEFT, K_RIGHT, MOUSEBUTTONUP
 import config # this is the config python file config.py
 from signal import alarm, signal, SIGALRM, SIGKILL
@@ -99,6 +100,23 @@ def is_connected():
   except:
      pass
   return False    
+
+def print_pic(filename):
+	conn = cups.Connection()
+	printers = conn.getPrinters()
+	default_printer = printers.keys()[1]
+	cups.setUser('pi')
+	conn.printFile(default_printer, filename, "photobooth",{'fit-to-page':'true'})
+	print "Printing image"
+
+def print_pdf(filename):
+	conn = cups.Connection()
+	printers = conn.getPrinters()
+	print printers
+	default_printer = printers.keys()[0]
+	cups.setUser('pi')
+	conn.printFile(default_printer, filename, "photobooth" + time.strftime("%Y-%m-%d-%H-%M-%S"),{'fit-to-page':'true'})
+	print "Printing image"
 
 # set variables to properly display the image on screen at right ratio
 def set_demensions(img_w, img_h):
@@ -187,7 +205,7 @@ def start_photobooth():
 	
 	camera = picamera.PiCamera()  
 	camera.vflip = False
-	camera.hflip = True # flip for preview, showing users a mirror image
+	camera.hflip = False # flip for preview, showing users a mirror image
 	#camera.saturation = -100 # comment out this line if you want color images
 	camera.iso = config.camera_iso
 	
@@ -210,7 +228,7 @@ def start_photobooth():
 	if config.capture_count_pics:
 		try: # take the photos
 			for i in range(1,total_pics+1):
-				camera.hflip = True # preview a mirror image
+				camera.hflip = False # preview a mirror image
 				camera.start_preview(resolution=(config.monitor_w, config.monitor_h)) # start preview at low res but the right ratio
 				time.sleep(2) #warm up camera
 				filename = config.file_path + now + '-0' + str(i) + '.jpg'
@@ -245,10 +263,10 @@ def start_photobooth():
 	
 	print "Creating an animated gif" 
 	
-	if config.post_online:
-		show_image(real_path + "/uploading.png")
-	else:
-		show_image(real_path + "/processing.png")
+	#if config.printing:
+        #		show_image(real_path + "/printing.png")
+	#else:
+	#	show_image(real_path + "/processing.png")
 	
 	if config.make_gifs: # make the gifs
 		if config.hi_res_pics:
@@ -263,43 +281,44 @@ def start_photobooth():
 			# make an animated gif with the low resolution images
 			graphicsmagick = "gm convert -delay " + str(gif_delay) + " " + config.file_path + now + "*.jpg " + config.file_path + now + ".gif" 
 			os.system(graphicsmagick) #make the .gif
-
-	if config.post_online: # turn off posting pics online in config.py
-		connected = is_connected() #check to see if you have an internet connection
-
-		if (connected==False):
-			print "bad internet connection"
+	if config.debug_mode:
+		print_pdf(filename)
+	elif config.printing: # turn off posting pics online in config.py
+		#connected = is_connected() #check to see if you have an internet connection
+                print_pic(filename) 
+		#if (connected==False):
+		#	print "bad internet connection"
                     
-		while connected:
-			if config.make_gifs: 
-				try:
-					file_to_upload = config.file_path + now + ".gif"
-					client.create_photo(config.tumblr_blog, state="published", tags=[config.tagsForTumblr], data=file_to_upload)
-					break
-				except ValueError:
-					print "Oops. No internect connection. Upload later."
-					try: #make a text file as a note to upload the .gif later
-						file = open(config.file_path + now + "-FILENOTUPLOADED.txt",'w')   # Trying to create a new file or open one
-						file.close()
-					except:
-						print('Something went wrong. Could not write file.')
-						sys.exit(0) # quit Python
-			else: # upload jpgs instead
-				try:
-					# create an array and populate with file paths to our jpgs
-					myJpgs=[0 for i in range(4)]
-					for i in range(4):
-						myJpgs[i]=config.file_path + now + "-0" + str(i+1) + ".jpg"
-					client.create_photo(config.tumblr_blog, state="published", tags=[config.tagsForTumblr], format="markdown", data=myJpgs)
-					break
-				except ValueError:
-					print "Oops. No internect connection. Upload later."
-					try: #make a text file as a note to upload the .gif later
-						file = open(config.file_path + now + "-FILENOTUPLOADED.txt",'w')   # Trying to create a new file or open one
-						file.close()
-					except:
-						print('Something went wrong. Could not write file.')
-						sys.exit(0) # quit Python				
+		#while connected:
+		#	if config.make_gifs: 
+		#		try:
+		#			file_to_upload = config.file_path + now + ".gif"
+		#			client.create_photo(config.tumblr_blog, state="published", tags=[config.tagsForTumblr], data=file_to_upload)
+		#			break
+		#		except ValueError:
+		#			print "Oops. No internect connection. Upload later."
+		#			try: #make a text file as a note to upload the .gif later
+		#				file = open(config.file_path + now + "-FILENOTUPLOADED.txt",'w')   # Trying to create a new file or open one
+		#				file.close()
+		#			except:
+		#				print('Something went wrong. Could not write file.')
+		#				sys.exit(0) # quit Python
+		#	else: # upload jpgs instead
+		#		try:
+		#			# create an array and populate with file paths to our jpgs
+		#			myJpgs=[0 for i in range(4)]
+		#			for i in range(4):
+		#				myJpgs[i]=config.file_path + now + "-0" + str(i+1) + ".jpg"
+		#			client.create_photo(config.tumblr_blog, state="published", tags=[config.tagsForTumblr], format="markdown", data=myJpgs)
+		#			break
+		#		except ValueError:
+		#			print "Oops. No internect connection. Upload later."
+		#			try: #make a text file as a note to upload the .gif later
+		#				file = open(config.file_path + now + "-FILENOTUPLOADED.txt",'w')   # Trying to create a new file or open one
+		#				file.close()
+		#			except:
+		#				print('Something went wrong. Could not write file.')
+		#				sys.exit(0) # quit Python				
 	
 	########################### Begin Step 4 #################################
 	
@@ -314,7 +333,7 @@ def start_photobooth():
 		
 	print "Done"
 	
-	if config.post_online:
+	if config.debug_mode:
 		show_image(real_path + "/finished.png")
 	else:
 		show_image(real_path + "/finished2.png")
